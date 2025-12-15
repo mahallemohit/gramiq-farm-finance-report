@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>GramIQ Farm Finance Form</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+        }
+
+        input, select, button {
+            margin: 5px 0;
+            padding: 6px;
+            width: 300px;
+        }
+
+        textarea {
+            width: 600px;
+            height: 150px;
+        }
+
+        h2, h3 {
+            margin-top: 20px;
+        }
+
+        button {
+            width: 250px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+
+<h2>Farm Finance Data Entry</h2>
+
+<form id="financeForm">
+
+    <h3>Farmer & Crop Details</h3>
+
+    <input type="text" id="farmer_name" placeholder="Farmer Name" required><br>
+    <input type="text" id="crop_name" placeholder="Crop Name" required><br>
+
+    <select id="season">
+        <option value="Kharif">Kharif</option>
+        <option value="Rabi">Rabi</option>
+        <option value="Zaid">Zaid</option>
+    </select><br>
+
+    <input type="number" id="total_acres" placeholder="Total Acres" required><br>
+    <input type="date" id="sowing_date" required><br>
+    <input type="date" id="harvest_date" required><br>
+    <input type="text" id="location" placeholder="Location" required><br>
+
+    <h3>Expense Details (Editable JSON)</h3>
+
+    <textarea id="expenses">[
+  {
+    "category": "Fertilizers",
+    "amount": 1500,
+    "date": "2025-11-05",
+    "description": "Bought XYZ fertilizer"
+  }
+]</textarea>
+
+    <h3>Income Details (Editable JSON)</h3>
+
+    <textarea id="incomes">[
+  {
+    "category": "Sale of produce",
+    "amount": 25000,
+    "date": "2025-11-20",
+    "description": "Sold 5 Quintals"
+  }
+]</textarea>
+
+    <br><br>
+    <button type="button" onclick="submitForm()">Generate & Download PDF</button>
+
+</form>
+
+<script>
+function submitForm() {
+    let expenses = [];
+    let incomes = [];
+
+    try {
+        expenses = JSON.parse(document.getElementById("expenses").value);
+        incomes = JSON.parse(document.getElementById("incomes").value);
+    } catch (error) {
+        alert("Invalid JSON format in Expense or Income section.");
+        console.error(error);
+        return;
+    }
+
+    const data = {
+        farmer_name: document.getElementById("farmer_name").value,
+        crop_name: document.getElementById("crop_name").value,
+        season: document.getElementById("season").value,
+        total_acres: parseFloat(document.getElementById("total_acres").value),
+        sowing_date: document.getElementById("sowing_date").value,
+        harvest_date: document.getElementById("harvest_date").value,
+        location: document.getElementById("location").value,
+        expenses: expenses,
+        incomes: incomes
+    };
+
+    fetch("/generate-pdf", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error("Server error: " + response.status);
+        }
+        return response.blob();
+    })
+    .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "farm_finance_report.pdf";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+    })
+    .catch(error => {
+        alert("PDF generation failed. Check terminal.");
+        console.error(error);
+    });
+}
+</script>
+
+</body>
+</html>
